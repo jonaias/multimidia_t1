@@ -78,57 +78,5 @@ void run_length_encode(uint16_t *buffer,uint32_t *buffer_size){
 
 
 void difference_encode(uint16_t *buffer,uint32_t *buffer_size){
-		uint32_t buffer_index=0;
-		uint32_t temp_buffer_index=0;
-		uint16_t last;
-		uint16_t *temp_buffer;
-		temp_buffer = malloc(*buffer_size);
-		if (!temp_buffer){
-			printf("Cannot allocate memory.\n");
-			return;
-		} 
-		
-		last = buffer[buffer_index];
-		temp_buffer[temp_buffer_index]= buffer[buffer_index];
-		printf("Copied %d from buffer[%d] to temp_buffer[%d]\n",buffer[buffer_index],buffer_index,temp_buffer_index);
-		buffer_index++;
-		temp_buffer_index++;
-		
-		while(	(buffer_index<(*buffer_size/sizeof(uint16_t)))&&
-				(temp_buffer_index<(*buffer_size/sizeof(uint16_t)))
-			){
-				temp_buffer[temp_buffer_index]=buffer[buffer_index];
-				/*printf("Copied %d from buffer[%d] to temp_buffer[%d]\n",buffer[buffer_index],buffer_index,temp_buffer_index);*/
-				temp_buffer_index++;
-				/* Check if its a runlength */
-				if (buffer[buffer_index]==last){
-					printf("Found carrier\n");
-					uint16_t number_of_copy=0;
-					buffer_index++;
-					/* Counts the run length */
-					while((buffer[buffer_index]==last) && (number_of_copy<0xffff) && (buffer_index<(*buffer_size/sizeof(uint16_t)))){
-						number_of_copy++;
-						buffer_index++;
-					}
-					/* Write the number of run length found */
-					temp_buffer[temp_buffer_index] = number_of_copy;
-					/*printf("Runlength %d writen to temp_buffer[%d]\n",number_of_copy,temp_buffer_index);*/
-					temp_buffer_index++;
-					
-					if ((buffer_index<(*buffer_size/sizeof(uint16_t)))){
-						/* To avoid 0x0000 0x0000 0xFFFF 0x0000 0xFFFF */
-						temp_buffer[temp_buffer_index]=buffer[buffer_index];
-						/*printf("Copied %d from buffer[%d] to temp_buffer[%d]\n",buffer[buffer_index],buffer_index,temp_buffer_index);*/
-						buffer_index++;
-						temp_buffer_index++;
-					}
-				}
-				/* Store as last integer 16bit found */
-				last = buffer[buffer_index];
-				buffer_index++;
-		}
-		free(buffer);
-		buffer = temp_buffer;
-		*buffer_size = temp_buffer_index;
-		
+	
 }
