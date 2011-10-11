@@ -35,14 +35,15 @@ void print_help(){
 }
      
      
-#define  channel_number 2
+#define number_of_channels 2
 #define bytes_per_sample 2
      
 int main (int argc, char **argv)
 {
 	FILE *input_file;
-	int8_t *buffer,**buffer_channels;
-	uint32_t file_size=0,data_start_pos=0,max_difference=0,data_size=0;
+	int8_t *buffer,**channel_datas;
+	uint32_t *channel_sizes;
+	uint32_t file_size=0,data_start_pos=0,data_size=0;
 	int difference_flag = 0;
 	int run_length_flag = 0;
 	int huffman_flag = 0;
@@ -78,8 +79,8 @@ int main (int argc, char **argv)
 	   }
 	   
 	if((difference_flag+run_length_flag+huffman_flag)&&((argc-optind)==2)){
-		TRACE("difference_flag = %d, run_length_flag = %d, huffman_flag = %d\n",difference_flag, run_length_flag, huffman_flag);
-		TRACE("input file = %s, output file = %s\n",argv[optind],argv[optind+1]);
+		printf("difference_flag = %d, run_length_flag = %d, huffman_flag = %d\n",difference_flag, run_length_flag, huffman_flag);
+		printf("input file = %s, output file = %s\n",argv[optind],argv[optind+1]);
 		
 		
 		/* Open file as binary read only and get its size */
@@ -123,35 +124,34 @@ int main (int argc, char **argv)
 		data_size=file_size-data_start_pos;
 		
 		
-		/*Malloc buffer for each channel*/
-		buffer_channels =  (int8_t **) malloc(channel_number*sizeof(int8_t *));
-		for(i=0;i<channel_number;i++)
-			buffer_channels[i] = (int8_t *) malloc((data_size/channel_number)*2*sizeof(int8_t));/* multiply by 2 just in case of instead compressing, increassing file size */
-		
+		/*Malloc buffer for each channel and its size*/
+		channel_datas =  (int8_t **) malloc(number_of_channels*sizeof(int8_t *));
+		channel_sizes = (uint32_t *) malloc(number_of_channels*sizeof(uint32_t));
+		for(i=0;i<number_of_channels;i++){
+			channel_sizes[i]=(8*data_size)/number_of_channels;
+			channel_datas[i] = (int8_t *) malloc((data_size/number_of_channels)*2*sizeof(int8_t));/* multiply by 2 just in case of instead compressing, increassing file size */
+		}
 		/* Split data across channels, counting bytes per channel */
 		for(i=data_start_pos;i<data_size;i++){
-			TRACE("i=%d channel_number=%d   buffer_channels[%d][%d]=buffer[%d](%d)\n",i,channel_number,((i-data_start_pos)%(channel_number*bytes_per_sample))/bytes_per_sample,(i-data_start_pos)%bytes_per_sample+((i-data_start_pos)/(bytes_per_sample*channel_number))*bytes_per_sample,i,buffer[i]);
-			buffer_channels[((i-data_start_pos)%(channel_number*bytes_per_sample))/bytes_per_sample][(i-data_start_pos)%bytes_per_sample+((i-data_start_pos)/(bytes_per_sample*channel_number))*bytes_per_sample]=buffer[i];
+			TRACE("i=%d number_of_channels=%d   channel_datas[%d][%d]=buffer[%d](%d)\n",i,number_of_channels,((i-data_start_pos)%(number_of_channels*bytes_per_sample))/bytes_per_sample,(i-data_start_pos)%bytes_per_sample+((i-data_start_pos)/(bytes_per_sample*number_of_channels))*bytes_per_sample,i,buffer[i]);
+			channel_datas[((i-data_start_pos)%(number_of_channels*bytes_per_sample))/bytes_per_sample][(i-data_start_pos)%bytes_per_sample+((i-data_start_pos)/(bytes_per_sample*number_of_channels))*bytes_per_sample]=buffer[i];
 		}
 				
 		/* To test splitting */
-		TRACE("O valor do primeiro byte é %X\n",buffer_channels[1][1]);
+		TRACE("The first value byte is %X\n",channel_datas[1][1]);
 		
 
 
-		if(run_length_flag){
-			int channel_size_in_bits=(data_size*8)/(channel_number*bytes_per_sample);
-			run_length_encode(buffer_channels[0],&data_size,channel_size_in_bits);
+		if(difference_flag){
+			for(i=0;i<number_of_channels;i++){
+				difference_encode(channel_datas[i],&channel_sizes[i],bytes_per_sample);
+			}
 		}
 		
-		if(difference_flag){
-			/* Testing */
-			for(i=data_start_pos;i<file_size/2-2;i++){
-				if ((abs(buffer[i+2]-buffer[i]))>abs(max_difference)){
-					max_difference=abs(buffer[i+2]-buffer[i]);
-				}
+		if(run_length_flag){
+			for(i=0;i<number_of_channels;i++){
+				run_length_encode(channel_datas[i],&channel_sizes[i]);
 			}
-			/*difference_encode(&buffer[data_start_pos],&data_size);*/
 		}
 		
 		
