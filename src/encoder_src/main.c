@@ -111,23 +111,43 @@ int main (int argc, char **argv)
 		fclose(input_file);
 		
 		/*Find how much channels*/
-		for(i=0;i<file_size-3;i++){
+		for(i=0;i<file_size-2;i++){
 			/* if buffer[i] == 'data' */
 			if ((buffer[i]=='f')&&(buffer[i+1]=='m')&&(buffer[i+2]=='t')){
 				/* data_start_pos = buffer[i]=='d' + 8 bytes(ckID + cksize) */
-				printf("Number of channes: %u\n",(uint16_t)buffer[i+10]);
-				number_of_channels = (uint16_t)buffer[i+10];
+				printf("Number of channes: %u\n",*(uint16_t*)(buffer+i+10));
+				number_of_channels = *(uint16_t*)(buffer+i+10);
 				break;
 			}
 		}
 		
-		/*Find how bits per sample*/
-		for(i=0;i<file_size-3;i++){
+		/* Find how wav is encoded */
+		for(i=0;i<file_size-2;i++){
 			/* if buffer[i] == 'data' */
 			if ((buffer[i]=='f')&&(buffer[i+1]=='m')&&(buffer[i+2]=='t')){
 				/* data_start_pos = buffer[i]=='d' + 8 bytes(ckID + cksize) */
-				printf("Number of bytes per sample : %u\n",(uint16_t)buffer[i+22]/8);
-				bytes_per_sample = (uint16_t)buffer[i+22]/8;
+				printf("Encoding format: %x\n",*(uint16_t*)(buffer+i+8));
+				if (*(uint16_t*)(buffer+i+8) != 0x0001){
+					printf("Warning->Format not supported, assuming PCM.\n");
+				}
+				*(uint16_t*)(buffer+i+8) |= (difference_flag<<15) | (run_length_flag<<14) | (huffman_flag<<13); 
+				break;
+			}
+		}
+		
+		/*Find how  much bits per sample*/
+		for(i=0;i<file_size-2;i++){
+			/* if buffer[i] == 'data' */
+			if ((buffer[i]=='f')&&(buffer[i+1]=='m')&&(buffer[i+2]=='t')){
+				/* data_start_pos = buffer[i]=='d' + 8 bytes(ckID + cksize) */
+				printf("Number of bits per sample : %u\n",(*(uint16_t*)(buffer+i+22)));
+				if (*(uint16_t*)(buffer+i+22) % 8){
+					printf("Warning->Sample rate not supported(not divided by 8), assuming 16bits.\n");
+					bytes_per_sample = 2;
+				}
+				else{
+					bytes_per_sample = (*(uint16_t*)(buffer+i+22))/8;
+				}
 				break;
 			}
 		}
