@@ -20,6 +20,8 @@
 
 
 #include "encode.h"
+#include "../util/util.h"
+
 
 void print_help(){
 	printf("Usage: encode -d -c -h <in_file.wav> <out_file.bin>\n");
@@ -32,11 +34,15 @@ void print_help(){
 	printf("At least one codification and two file parameters must be specified.\n");
 }
      
+     
+#define  channel_number 2
+#define bytes_per_sample 2
+     
 int main (int argc, char **argv)
 {
 	FILE *input_file;
-	uint16_t *buffer;
-	uint32_t file_size,data_start_pos=0,max_difference=0,data_size=0;
+	int8_t *buffer,**buffer_channels;
+	uint32_t file_size=0,data_start_pos=0,max_difference=0,data_size=0;
 	int difference_flag = 0;
 	int run_length_flag = 0;
 	int huffman_flag = 0;
@@ -72,9 +78,11 @@ int main (int argc, char **argv)
 	   }
 	   
 	if((difference_flag+run_length_flag+huffman_flag)&&((argc-optind)==2)){
-		printf ("difference_flag = %d, run_length_flag = %d, huffman_flag = %d\n",difference_flag, run_length_flag, huffman_flag);
-		printf("input file = %s, output file = %s\n",argv[optind],argv[optind+1]);
-
+		TRACE("difference_flag = %d, run_length_flag = %d, huffman_flag = %d\n",difference_flag, run_length_flag, huffman_flag);
+		TRACE("input file = %s, output file = %s\n",argv[optind],argv[optind+1]);
+		
+		
+		/* Open file as binary read only and get its size */
 		input_file = fopen(argv[optind], "rb");
 		if(input_file != NULL)
 		{
@@ -87,40 +95,63 @@ int main (int argc, char **argv)
 			return -1;
 		}
 		
-		printf("File size %d\n",file_size);
+		
+		/* Print inicial file size */
+		printf("Original file size: %d bytes\n",file_size);
+		
 		
 		/* Malloc all the needed buffer */
-		buffer = (uint16_t *) malloc(file_size); 
+		buffer = (int8_t *) malloc(file_size); 
 		if (!buffer){
 			printf("Cannot allocate memory.\n");
 			return -1;
 		}
 		
+		
+		/*Find where data starts*/
 		fread(buffer,1,file_size,input_file);
-		for(i=0;i<file_size/2-2;i++){
+		for(i=0;i<file_size-3;i++){
 			/* if buffer[i] == 'data' */
-			if ((buffer[i]==0x6164)&&(buffer[i+1]==0x6174)){
-				/* data_start_pos = pos('da') + 12 bytes(Data Chunk size) */
-				data_start_pos=i+6;
+			if ((buffer[i]=='d')&&(buffer[i+1]=='a')&&(buffer[i+2]=='t')&&(buffer[i+3]=='a')){
+				/* data_start_pos = buffer[i]=='d' + 8 bytes(ckID + cksize) */
+				data_start_pos=i+8;
 				break;
 			}
 		}
 		
+		/*Write data size*/
 		data_size=file_size-data_start_pos;
 		
+		
+		/*Malloc buffer for each channel*/
+		buffer_channels =  (int8_t **) malloc(channel_number*sizeof(int8_t *));
+		for(i=0;i<channel_number;i++)
+			buffer_channels[i] = (int8_t *) malloc((data_size/channel_number)*2*sizeof(int8_t));/* multiply by 2 just in case of instead compressing, increassing file size */
+		
+		/* Split data across channels, counting bytes per channel */
+		for(i=data_start_pos;i<data_size;i++){
+			TRACE("i=%d channel_number=%d   buffer_channels[%d][%d]=buffer[%d](%d)\n",i,channel_number,((i-data_start_pos)%(channel_number*bytes_per_sample))/bytes_per_sample,(i-data_start_pos)%bytes_per_sample+((i-data_start_pos)/(bytes_per_sample*channel_number))*bytes_per_sample,i,buffer[i]);
+			buffer_channels[((i-data_start_pos)%(channel_number*bytes_per_sample))/bytes_per_sample][(i-data_start_pos)%bytes_per_sample+((i-data_start_pos)/(bytes_per_sample*channel_number))*bytes_per_sample]=buffer[i];
+		}
+				
+		/* To test splitting */
+		TRACE("O valor do primeiro byte é %X\n",buffer_channels[1][1]);
+		
+
+
 		if(run_length_flag){
-			run_length_encode(&buffer[data_start_pos],&data_size);
+			int channel_size_in_bits=(data_size*8)/(channel_number*bytes_per_sample);
+			run_length_encode(buffer_channels[0],&data_size,channel_size_in_bits);
 		}
 		
 		if(difference_flag){
 			/* Testing */
 			for(i=data_start_pos;i<file_size/2-2;i++){
-				if ((buffer[i+1]-buffer[i])>max_difference){
-					max_difference=buffer[i+1]-buffer[i];
-					printf("Max difference = %u\n  i=%u",max_difference,i);
+				if ((abs(buffer[i+2]-buffer[i]))>abs(max_difference)){
+					max_difference=abs(buffer[i+2]-buffer[i]);
 				}
 			}
-			difference_encode(&buffer[data_start_pos],&data_size);
+			/*difference_encode(&buffer[data_start_pos],&data_size);*/
 		}
 		
 		

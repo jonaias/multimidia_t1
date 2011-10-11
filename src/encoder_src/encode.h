@@ -25,6 +25,22 @@
 #include <getopt.h>
 #include <stdint.h> /*uint8_t*/
 #include <ctype.h>  /*isprint*/
-
-void run_length_encode(uint16_t *buffer,uint32_t *buffer_size);
-void difference_encode(uint16_t *buffer,uint32_t *buffer_size);
+/*
+ * Params: 
+ * 	buffer - Channel start data position
+ * 	buffer_size - Size of channel data in BITS
+ * 	bytes_per_sample - Number of BYTES per sample
+ * 
+ * 	What it does?
+ * 	Compress buffer with difference encoding each SAMPLES_PER_BLOCK(how to define SAMPLES_PER_BLOCK? static in a define?) samples with a best calculated delta size(acording to the group of samples)
+ * 	Example:
+ * 	Considering bytes_per_sample=2
+ * 	0x4440 0x4421 0x4400 0x4400 0x4422 0x4421 0x4400 0x4400 0x4404 0x4407 0x4400 0x4403 0x4405
+ * 	using SAMPLES_PER_BLOCK 5 bytes 
+ * 	0x06 0x4440 -29 -21 0 22 -1 0x04 0x4400 4 3 -7 3 2
+ *  first byte how much bits_for_difference in the block(max size off course is bytes_per_sample*8)
+ * 	second is the first sample of the block
+ * 	Every group of next bits_for_difference represents delta between samples
+ * */
+void difference_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t bytes_per_sample);
+void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits);
