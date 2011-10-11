@@ -25,6 +25,6 @@ void difference_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t byt
 }
 
 
-void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits){
+void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits,int symbol_size_in_bits){
 	
 }

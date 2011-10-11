@@ -35,14 +35,11 @@ void print_help(){
 }
      
      
-#define number_of_channels 2
-#define bytes_per_sample 2
-     
 int main (int argc, char **argv)
 {
-	FILE *input_file;
+	FILE *input_file,*output_file;
 	int8_t *buffer,**channel_datas;
-	uint32_t *channel_sizes;
+	uint32_t *channel_sizes,number_of_channels,bytes_per_sample;
 	uint32_t file_size=0,data_start_pos=0,data_size=0;
 	int difference_flag = 0;
 	int run_length_flag = 0;
@@ -92,7 +89,7 @@ int main (int argc, char **argv)
 			rewind(input_file);
 		}
 		else{
-			printf("Cannot open file \"%s\", does it exists?\n",argv[optind]);
+			printf("Cannot open input file \"%s\", does it exists?\n",argv[optind]);
 			return -1;
 		}
 		
@@ -109,8 +106,33 @@ int main (int argc, char **argv)
 		}
 		
 		
-		/*Find where data starts*/
+		/* Read the whole file */
 		fread(buffer,1,file_size,input_file);
+		fclose(input_file);
+		
+		/*Find how much channels*/
+		for(i=0;i<file_size-3;i++){
+			/* if buffer[i] == 'data' */
+			if ((buffer[i]=='f')&&(buffer[i+1]=='m')&&(buffer[i+2]=='t')){
+				/* data_start_pos = buffer[i]=='d' + 8 bytes(ckID + cksize) */
+				printf("Number of channes: %u\n",(uint16_t)buffer[i+10]);
+				number_of_channels = (uint16_t)buffer[i+10];
+				break;
+			}
+		}
+		
+		/*Find how bits per sample*/
+		for(i=0;i<file_size-3;i++){
+			/* if buffer[i] == 'data' */
+			if ((buffer[i]=='f')&&(buffer[i+1]=='m')&&(buffer[i+2]=='t')){
+				/* data_start_pos = buffer[i]=='d' + 8 bytes(ckID + cksize) */
+				printf("Number of bytes per sample : %u\n",(uint16_t)buffer[i+22]/8);
+				bytes_per_sample = (uint16_t)buffer[i+22]/8;
+				break;
+			}
+		}
+		
+		/*Find where data starts*/
 		for(i=0;i<file_size-3;i++){
 			/* if buffer[i] == 'data' */
 			if ((buffer[i]=='d')&&(buffer[i+1]=='a')&&(buffer[i+2]=='t')&&(buffer[i+3]=='a')){
@@ -131,8 +153,9 @@ int main (int argc, char **argv)
 			channel_sizes[i]=(8*data_size)/number_of_channels;
 			channel_datas[i] = (int8_t *) malloc((data_size/number_of_channels)*2*sizeof(int8_t));/* multiply by 2 just in case of instead compressing, increassing file size */
 		}
+		
 		/* Split data across channels, counting bytes per channel */
-		for(i=data_start_pos;i<data_size;i++){
+		for(i=data_start_pos;i<file_size;i++){
 			TRACE("i=%d number_of_channels=%d   channel_datas[%d][%d]=buffer[%d](%d)\n",i,number_of_channels,((i-data_start_pos)%(number_of_channels*bytes_per_sample))/bytes_per_sample,(i-data_start_pos)%bytes_per_sample+((i-data_start_pos)/(bytes_per_sample*number_of_channels))*bytes_per_sample,i,buffer[i]);
 			channel_datas[((i-data_start_pos)%(number_of_channels*bytes_per_sample))/bytes_per_sample][(i-data_start_pos)%bytes_per_sample+((i-data_start_pos)/(bytes_per_sample*number_of_channels))*bytes_per_sample]=buffer[i];
 		}
@@ -150,14 +173,33 @@ int main (int argc, char **argv)
 		
 		if(run_length_flag){
 			for(i=0;i<number_of_channels;i++){
-				run_length_encode(channel_datas[i],&channel_sizes[i]);
+				run_length_encode(channel_datas[i],&channel_sizes[i],1);
 			}
 		}
 		
 		
+		/* Open file as binary write only */
+		output_file = fopen(argv[optind+1], "wb");
+		if(output_file != NULL)
+		{
+			fwrite(buffer,1,data_start_pos,output_file);
+			for(i=0;i<number_of_channels;i++){
+				/* This uint32_t limits max channel size of ~<512mb */
+				fwrite(&channel_sizes[i],1,sizeof(uint32_t),output_file);
+				fwrite(channel_datas[i],1,channel_sizes[i]/8,output_file);
+			}
+			printf("Final file size: %lu bytes\n", ftell(output_file));
+			fclose(output_file);
+		}
+		
+		else{
+			printf("Cannot open output file \"%s\", does it exists?\n",argv[optind]);
+			return -1;
+		}
+		
 		
 		free(buffer);
-		fclose(input_file);
+		return 0;
 	
 	}
 	else{
