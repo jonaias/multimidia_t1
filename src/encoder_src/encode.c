@@ -44,41 +44,47 @@ void difference_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t byt
 void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits,int symbol_size_in_bits){
 	array_stream_t *array_stream_uncompressed,*array_stream_compressed;
 	int8_t *compressed_buffer;
+	
+	TRACE_RUN_LENGTH("\n\nCHANNEL START->");
 	compressed_buffer = malloc((2*(*buffer_size_in_bits))/8*sizeof(int8_t));/*In cade of expanding instead of compressing */
-	array_stream_uncompressed = MakeArrayStream(buffer,AS_READ);
-	array_stream_compressed = MakeArrayStream(compressed_buffer,AS_WRITE);
+	array_stream_uncompressed = MakeArrayStream((unsigned char *)buffer,AS_READ);
+	array_stream_compressed = MakeArrayStream((unsigned char *)compressed_buffer,AS_WRITE);
+	
 	if(!symbol_size_in_bits){
 	}
 	else{
 		uint32_t last=0,current=0;
 		ArrayStreamGetBits(array_stream_uncompressed, &last, symbol_size_in_bits);
 		ArrayStreamPutBits(array_stream_compressed, &last, symbol_size_in_bits);
+		TRACE_RUN_LENGTH("Writing %d bits (first sample) 0x%X\n",symbol_size_in_bits,current);
 		while(*buffer_size_in_bits>ArrayStreamGetBitCount(array_stream_uncompressed)){
-			current = 0;
 			ArrayStreamGetBits(array_stream_uncompressed, &current, symbol_size_in_bits);
 			ArrayStreamPutBits(array_stream_compressed, &current, symbol_size_in_bits);
+			TRACE_RUN_LENGTH("Writing %d bits (normal sample) 0x%X\n",symbol_size_in_bits,current);
 			if (current==last){
 					uint32_t number_of_copy=0;
 					/* Counts the run length */
-					while((number_of_copy<roundl(exp2l(symbol_size_in_bits))) && (*buffer_size_in_bits>ArrayStreamGetBitCount(array_stream_uncompressed)) ){
-						last = current;
+					while((((float)number_of_copy)<pow(2,symbol_size_in_bits)) && (*buffer_size_in_bits>ArrayStreamGetBitCount(array_stream_uncompressed)) ){
 						current =0;
 						ArrayStreamGetBits(array_stream_uncompressed, &current, symbol_size_in_bits);
 						if(current==last){
-							printf("Last:%u current:%u Number of copies:%u\n",last,current, number_of_copy);
 							number_of_copy++;
-							last = current;
 						}
-						else
+						else{
+							ArrayStreamPutBits(array_stream_compressed,&number_of_copy,symbol_size_in_bits);
+							TRACE_RUN_LENGTH("Writing %d bits (number of copy) 0x%X\n",symbol_size_in_bits,number_of_copy);
+							ArrayStreamPutBits(array_stream_compressed,&current,symbol_size_in_bits);
+							TRACE_RUN_LENGTH("Writing %d bits(next sample in sequence after a number of copy) 0x%X\n",symbol_size_in_bits,current);
 							break;
+						}
 					}
-					ArrayStreamPutBits(array_stream_compressed,&number_of_copy,symbol_size_in_bits);
-
 			}
 				/* Store as last integer 16bit found */
 			last = current;
 		}
 	}
+	TRACE_RUN_LENGTH("<-CHANNEL STOP->\n\n");
+	
 	memcpy(buffer,compressed_buffer,ArrayStreamGetBitCount(array_stream_compressed)/8);
 	*buffer_size_in_bits = ArrayStreamGetBitCount(array_stream_compressed);
 	free(compressed_buffer);

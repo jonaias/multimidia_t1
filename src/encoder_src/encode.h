@@ -28,6 +28,7 @@
 #include <math.h>
 
 #include "../util/arraystream.h"
+#include "../util/util.h"
 
 #define SAMPLES_PER_BLOCK 1000
 /*

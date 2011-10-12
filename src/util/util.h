@@ -32,6 +32,14 @@
 #define TRACE(...)
 #endif
 
+#define NDEBUG_RUN_LENGTH
+
+#ifndef NDEBUG_RUN_LENGTH
+#define TRACE_RUN_LENGTH printf
+#else
+#define TRACE_RUN_LENGTH(...)
+#endif
+
 
 /*
  *  Need to adapt 
