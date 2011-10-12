@@ -26,5 +26,6 @@
 #include <stdint.h> /*uint8_t*/
 #include <ctype.h>  /*isprint*/
 
-void run_length_decode(uint16_t *buffer,uint32_t *buffer_size);
-void difference_decode(uint16_t *buffer,uint32_t *buffer_size);
+void difference_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t bytes_per_sample);
+
+void run_length_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, int symbol_size_in_bits);
