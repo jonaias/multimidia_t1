@@ -25,6 +25,11 @@
 #include <getopt.h>
 #include <stdint.h> /*uint8_t*/
 #include <ctype.h>  /*isprint*/
+#include <math.h>
+
+#include "../util/arraystream.h"
+
+#define SAMPLES_PER_BLOCK 1000
 /*
  * Params: 
  * 	buffer - IN/OUT - Channel start data position
@@ -53,7 +58,7 @@ void difference_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t byt
  * Params: 
  * 	buffer - IN/OUT - Channel start data position
  * 	buffer_size - IN/OUT -Size of channel data in BITS.. after compressing needs to be update with ceil(buffer_size)
- * 	running_after_difference_encoding - IN - if its running after a difference encoding
+ * 	symbol_size_in_bits - IN - if its running after a difference encoding
  * 
  * 	What it does?
  * 	Compress buffer with runlength

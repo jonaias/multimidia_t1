@@ -49,7 +49,7 @@ int main (int argc, char **argv)
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "cdh:")) != -1)
+	while ((c = getopt (argc, argv, "cdh")) != -1)
 	 switch (c)
 	   {
 	   case 'd':
@@ -193,7 +193,7 @@ int main (int argc, char **argv)
 		
 		if(run_length_flag){
 			for(i=0;i<number_of_channels;i++){
-				run_length_encode(channel_datas[i],&channel_sizes[i],1);
+				run_length_encode(channel_datas[i],&channel_sizes[i],difference_flag?0:bytes_per_sample*8);
 			}
 		}
 		
@@ -217,7 +217,11 @@ int main (int argc, char **argv)
 			return -1;
 		}
 		
-		
+		for(i=0;i<number_of_channels;i++){
+			free(channel_datas[i]);
+		}
+		free(channel_sizes);
+		free(channel_datas);
 		free(buffer);
 		return 0;
 	

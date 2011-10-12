@@ -175,7 +175,7 @@ int main (int argc, char **argv)
 		for(i=0;i<number_of_channels;i++){
 			channel_sizes[i]=(8*compressed_file_data_size)/number_of_channels;
 			printf("The size of pre-allocated bytes for uncompressed channel %d is %d\n",i,original_file_data_size/number_of_channels);
-			channel_datas[i] = (int8_t *) malloc(original_file_data_size/number_of_channels);/* multiply by 2 just in case of instead compressing, increassing file size */
+			channel_datas[i] = (int8_t *) malloc(original_file_data_size/number_of_channels);
 		}
 		
 		
@@ -239,7 +239,15 @@ int main (int argc, char **argv)
 		}
 		
 		
+		for(i=0;i<number_of_channels;i++){
+			free(channel_datas[i]);
+		}
+		free(channel_sizes);
+		free(channel_datas);
+		free(out_buffer);
 		free(buffer);
+		
+		
 		return 0;
 	
 	}
