@@ -175,7 +175,7 @@ int main (int argc, char **argv)
 		for(i=0;i<number_of_channels;i++){
 			channel_sizes[i]=(8*compressed_file_data_size)/number_of_channels;
 			printf("The size of pre-allocated bytes for uncompressed channel %d is %d\n",i,original_file_data_size/number_of_channels);
-			channel_datas[i] = (int8_t *) malloc(original_file_data_size/number_of_channels);
+			channel_datas[i] = (int8_t *) malloc(original_file_data_size/number_of_channels+((original_file_data_size%number_of_channels)?1:0));
 		}
 		
 		
@@ -186,7 +186,7 @@ int main (int argc, char **argv)
 				/* This uint32_t limits max channel size of ~<512mb */
 				fread(&channel_sizes[i],1,sizeof(uint32_t),input_file);
 				printf("The size of compressed channel %d is %d\n",i,channel_sizes[i]/8);
-				fread(channel_datas[i],1,channel_sizes[i]/8,input_file);
+				fread(channel_datas[i],1,channel_sizes[i]/8+((channel_sizes[i]%8)?1:0),input_file);
 		}
 		
 		fclose(input_file);
@@ -195,7 +195,7 @@ int main (int argc, char **argv)
 		if(run_length_flag){
 			printf("Run length decoding ...\n");
 			for(i=0;i<number_of_channels;i++){
-				run_length_decode(channel_datas[i],&channel_sizes[i],1);
+				run_length_decode(channel_datas[i],&channel_sizes[i],difference_flag?0:bytes_per_sample*8);
 			}
 		}
 		
