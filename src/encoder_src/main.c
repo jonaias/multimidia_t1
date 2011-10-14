@@ -206,7 +206,7 @@ int main (int argc, char **argv)
 			for(i=0;i<number_of_channels;i++){
 				/* This uint32_t limits max channel size of ~<512mb */
 				fwrite(&channel_sizes[i],1,sizeof(uint32_t),output_file);
-				fwrite(channel_datas[i],1,channel_sizes[i]/8,output_file);
+				fwrite(channel_datas[i],1,channel_sizes[i]/8+((channel_sizes[i]%8)?1:0),output_file);
 			}
 			printf("Final file size: %lu bytes\n", ftell(output_file));
 			fclose(output_file);

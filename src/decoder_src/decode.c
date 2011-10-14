@@ -47,12 +47,14 @@ void run_length_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, int symbol_
 			TRACE_RUN_LENGTH("Writing %d bits (normal sample) 0x%X\n",symbol_size_in_bits,current);
 			TRACE_RUN_LENGTH("Current=%X  Last=%X\n",current,last);
 			if ((current==last)){
+				if (*buffer_size_in_bits>ArrayStreamGetBitCount(array_stream_compressed)){
 					ArrayStreamGetBits(array_stream_compressed, &current, symbol_size_in_bits);
 					while(current){
-						TRACE_RUN_LENGTH("Writing %d bits (copies samples) 0x%X\n",symbol_size_in_bits,current);
+						TRACE_RUN_LENGTH("Writing %d bits (copies samples) 0x%X\n",symbol_size_in_bits,last);
 						ArrayStreamPutBits(array_stream_uncompressed,&last,symbol_size_in_bits);
 						current--;
 					}
+				}
 			}
 			else{
 				last = current;
@@ -61,7 +63,7 @@ void run_length_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, int symbol_
 	}
 	TRACE_RUN_LENGTH("<-CHANNEL STOP->\n\n");
 	
-	memcpy(buffer,uncompressed_buffer,ArrayStreamGetBitCount(array_stream_uncompressed)/8+(ArrayStreamGetBitCount(array_stream_uncompressed)%8?1:0));
+	memcpy(buffer,uncompressed_buffer,ArrayStreamGetBitCount(array_stream_uncompressed)/8+((ArrayStreamGetBitCount(array_stream_uncompressed)%8)?1:0));
 	*buffer_size_in_bits = ArrayStreamGetBitCount(array_stream_compressed);
 	free(uncompressed_buffer);
 }

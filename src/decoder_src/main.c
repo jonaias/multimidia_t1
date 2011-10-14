@@ -175,7 +175,7 @@ int main (int argc, char **argv)
 		for(i=0;i<number_of_channels;i++){
 			channel_sizes[i]=(8*compressed_file_data_size)/number_of_channels;
 			printf("The size of pre-allocated bytes for uncompressed channel %d is %d\n",i,original_file_data_size/number_of_channels);
-			channel_datas[i] = (int8_t *) malloc(original_file_data_size/number_of_channels+((original_file_data_size%number_of_channels)?1:0));
+			channel_datas[i] = (int8_t *) malloc((2*original_file_data_size)/number_of_channels+((original_file_data_size%number_of_channels)?1:0));
 		}
 		
 		
@@ -221,7 +221,7 @@ int main (int argc, char **argv)
 		}
 				
 		/* To test joinning */
-		TRACE("The first value byte is %X\n",channel_datas[1][1]);
+		TRACE("The first value byte is %X\n",channel_datas[1][0]);
 		
 		
 		/* Open file as binary write only */

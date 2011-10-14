@@ -85,7 +85,7 @@ void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits,int symbol_s
 	}
 	TRACE_RUN_LENGTH("<-CHANNEL STOP->\n\n");
 	
-	memcpy(buffer,compressed_buffer,ArrayStreamGetBitCount(array_stream_compressed)/8);
+	memcpy(buffer,compressed_buffer,ArrayStreamGetBitCount(array_stream_compressed)/8+(ArrayStreamGetBitCount(array_stream_compressed)%8?1:0));
 	*buffer_size_in_bits = ArrayStreamGetBitCount(array_stream_compressed);
 	free(compressed_buffer);
 }
