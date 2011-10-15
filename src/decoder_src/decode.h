@@ -1,7 +1,7 @@
 /*      decode.h
-      
+
         Copyright 2011 jonas <jonaias@jonaias-MX6453>
-      
+
         This program is free software; you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
         the Free Software Foundation; either version 2 of the License, or
@@ -29,6 +29,8 @@
 #include "../util/arraystream.h"
 #include "../util/util.h"
 
-void difference_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t bytes_per_sample);
+#define SAMPLES_PER_BLOCK 1024
+
+void difference_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t symbol_size_in_bits);
 
 void run_length_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, int symbol_size_in_bits);

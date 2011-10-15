@@ -1,7 +1,7 @@
 /*      encode.h
-      
+
         Copyright 2011 jonas <jonaias@jonaias-MX6453>
-      
+
         This program is free software; you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
         the Free Software Foundation; either version 2 of the License, or
@@ -30,7 +30,7 @@
 #include "../util/arraystream.h"
 #include "../util/util.h"
 
-#define SAMPLES_PER_BLOCK 1000
+#define SAMPLES_PER_BLOCK 1024
 /*
  * Params: 
  * 	buffer - IN/OUT - Channel start data position
@@ -50,7 +50,7 @@
  * 	second is the first sample of the block
  * 	Every group of next bits_for_difference represents delta between samples
  * */
-void difference_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t bytes_per_sample);
+void difference_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t symbol_size_in_bits);
 
 
 
