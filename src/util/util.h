@@ -24,6 +24,11 @@
  /*
   * Use it as Makefile flag
   * */
+  
+#include <math.h>
+
+#define SAMPLES_PER_BLOCK 1024
+  
 #define NDEBUG
 
 #ifndef NDEBUG

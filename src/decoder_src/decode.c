@@ -1,12 +1,12 @@
 /*     	decode.c
-      
+
         Copyright 2011 jonas <jonaias@jonaias-MX6453>
         
         This program is free software; you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
         the Free Software Foundation; either version 2 of the License, or
         (at your option) any later version.
-      
+
         This program is distributed in the hope that it will be useful,
         but WITHOUT ANY WARRANTY; without even the implied warranty of
         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -19,9 +19,62 @@
 
 
 #include "decode.h"
+#include <math.h>
 
-void difference_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t bytes_per_sample){
-	
+
+void difference_decode(int8_t* buffer, uint32_t* buffer_size_in_bits, uint8_t symbol_size_in_bits) {
+    /* Variables */
+    uint32_t        i,j;
+
+    uint32_t        nSamples;
+    uint32_t        nBlocks;
+    uint8_t*        uncompressedData;
+    array_stream_t* uncompressedArray;
+    array_stream_t* compressedArray;
+
+    uint32_t*       blockData;
+    int32_t         difference;
+    uint32_t        nBits;
+
+    /* Gets the number of samples and blocks */
+    nSamples = (*buffer_size_in_bits)/symbol_size_in_bits;
+    nBlocks  = ceil(nSamples/SAMPLES_PER_BLOCK);
+
+    /* Allocates space for block output data */
+    blockData = (uint32_t*) malloc(SAMPLES_PER_BLOCK*sizeof(uint32_t));
+
+    /* Creates input array */
+    compressedArray = MakeArrayStream((uint8_t*) buffer, AS_READ);
+
+    /* Creates output array */
+    uncompressedData  = (uint8_t*) malloc(ceil((*buffer_size_in_bits)/8));
+    uncompressedArray = MakeArrayStream(uncompressedData, AS_WRITE);
+
+    /* Runs the blocks */
+    for (i = 0; i < nBlocks; i++) {
+        /* Gets the number of bits of compressed data elements */
+        ArrayStreamGetBits(compressedArray, &nBits, symbol_size_in_bits);
+
+        /* Gets first block data */
+        ArrayStreamGetBits(uncompressedArray, &(blockData[0]), symbol_size_in_bits);
+
+        /* Runs input block restoring original values */
+        for (j = 1; j < SAMPLES_PER_BLOCK; j++) {
+            ArrayStreamGetBits(uncompressedArray, &difference, nBits);
+
+            blockData[j] = blockData[0] + difference;
+        }
+    }
+
+    /* Returns the number of bits of the compressed data */
+    *buffer_size_in_bits = ArrayStreamGetBitCount(uncompressedArray);
+
+    /* Returns the compressed buffer */
+    memcpy(buffer, uncompressedData, ceil((*buffer_size_in_bits)/8));
+
+    /* Frees used variables */
+    free(uncompressedData);
+    free(blockData);
 }
 
 
@@ -93,7 +146,7 @@ void run_length_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t sym
 	}
 	TRACE_RUN_LENGTH("<-CHANNEL STOP->\n\n");
 	
-	memcpy(buffer,uncompressed_buffer,ArrayStreamGetBitCount(array_stream_uncompressed)/8+(ceil(ArrayStreamGetBitCount(array_stream_uncompressed))));
+	memcpy(buffer,uncompressed_buffer,ceil(ArrayStreamGetBitCount(array_stream_uncompressed)/8));
 	*buffer_size_in_bits = ArrayStreamGetBitCount(array_stream_compressed);
 	free(uncompressed_buffer);
 }

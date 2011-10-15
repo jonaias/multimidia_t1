@@ -203,7 +203,7 @@ int main (int argc, char **argv)
 		if(difference_flag){
 			printf("Difference decoding ...\n");
 			for(i=0;i<number_of_channels;i++){
-				difference_decode(channel_datas[i],&channel_sizes[i],bytes_per_sample);
+				difference_decode(channel_datas[i],&channel_sizes[i],bytes_per_sample*8);
 			}
 		}
 		
