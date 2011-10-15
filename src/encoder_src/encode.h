@@ -30,7 +30,6 @@
 #include "../util/arraystream.h"
 #include "../util/util.h"
 
-#define SAMPLES_PER_BLOCK 1000
 /*
  * Params: 
  * 	buffer - IN/OUT - Channel start data position
@@ -71,4 +70,4 @@ void difference_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t byt
  * 	abcddddeeoooooabc
  * 	abcdd2ee0oo3abc
  * */
-void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, int symbol_size_in_bits);
+void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t symbol_size_in_bits);

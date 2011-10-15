@@ -41,7 +41,7 @@ void difference_encode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t byt
  * 	abcddddeeoooooabc
  * 	abcdd2ee0oo3abc
  * */
-void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits,int symbol_size_in_bits){
+void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits,uint8_t symbol_size_in_bits){
 	array_stream_t *array_stream_uncompressed,*array_stream_compressed;
 	int8_t *compressed_buffer;
 	
@@ -51,6 +51,29 @@ void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits,int symbol_s
 	array_stream_compressed = MakeArrayStream((unsigned char *)compressed_buffer,AS_WRITE);
 	
 	if(!symbol_size_in_bits){
+		uint32_t new_symbol_size_in_bits=0,first_sample=0,total_bits_encoded=0;
+		
+		while(*buffer_size_in_bits){
+			uint32_t encoded_bits_in_block=0;
+			ArrayStreamGetBits(array_stream_uncompressed, &new_symbol_size_in_bits, symbol_size_in_bits);
+			ArrayStreamPutBits(array_stream_compressed, &new_symbol_size_in_bits, symbol_size_in_bits);
+			TRACE_RUN_LENGTH("[variable run length]Reading and writing variable run length = %u bits 0x%X\n",symbol_size_in_bits,current);
+			ArrayStreamGetBits(array_stream_uncompressed, &first_sample, symbol_size_in_bits);
+			ArrayStreamPutBits(array_stream_compressed, &first_sample, symbol_size_in_bits);
+			TRACE_RUN_LENGTH("[variable run length]Reading first sample and writing it (%u) (first sample) 0x%X\n",symbol_size_in_bits,current);
+			/* Skip those two samples */
+			buffer+=((2*symbol_size_in_bits)/8);
+			buffer_size_in_bits-=(2*symbol_size_in_bits);
+			/* Encode the block, -1 comes from 1 less sample in block(the first one) */ 
+			encoded_bits_in_block=SAMPLES_PER_BLOCK*symbol_size_in_bits-1;
+			run_length_encode(buffer, &encoded_bits_in_block, new_symbol_size_in_bits);
+			/* Skip all samples already encoded, -1 comes from less ne block */
+			buffer+=(SAMPLES_PER_BLOCK-1)*(symbol_size_in_bits/8);
+			/* Sums bits encoded */
+			total_bits_encoded += encoded_bits_in_block;
+			return;
+		}
+		
 	}
 	else{
 		uint32_t last=0,current=0;
@@ -85,7 +108,7 @@ void run_length_encode(int8_t *buffer,uint32_t *buffer_size_in_bits,int symbol_s
 	}
 	TRACE_RUN_LENGTH("<-CHANNEL STOP->\n\n");
 	
-	memcpy(buffer,compressed_buffer,ArrayStreamGetBitCount(array_stream_compressed)/8+(ArrayStreamGetBitCount(array_stream_compressed)%8?1:0));
+	memcpy(buffer,compressed_buffer,ceil(ArrayStreamGetBitCount(array_stream_compressed)/8));
 	*buffer_size_in_bits = ArrayStreamGetBitCount(array_stream_compressed);
 	free(compressed_buffer);
 }

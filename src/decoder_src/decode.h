@@ -29,6 +29,6 @@
 #include "../util/arraystream.h"
 #include "../util/util.h"
 
-void difference_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t bytes_per_sample);
+void difference_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t symbol_size_in_bits);
 
-void run_length_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, int symbol_size_in_bits);
+void run_length_decode(int8_t *buffer,uint32_t *buffer_size_in_bits, uint8_t symbol_size_in_bits);
